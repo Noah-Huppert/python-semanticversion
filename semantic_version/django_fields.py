@@ -6,6 +6,7 @@ import warnings
 
 import django
 from django.db import models
+from django.core.exceptions import ValidationError
 
 if django.VERSION >= (3, 0):
     # See https://docs.djangoproject.com/en/dev/releases/3.0/#features-deprecated-in-3-0
@@ -75,10 +76,14 @@ class VersionField(SemVerField):
             return value
         if isinstance(value, base.Version):
             return value
-        if self.coerce:
-            return base.Version.coerce(value, partial=self.partial)
-        else:
-            return base.Version(value, partial=self.partial)
+        
+        try:
+            if self.coerce:
+                return base.Version.coerce(value, partial=self.partial)
+            else:
+                return base.Version(value, partial=self.partial)
+        except ValueError as e:
+            raise ValidationError(str(e)) from e
 
 
 class SpecField(SemVerField):
